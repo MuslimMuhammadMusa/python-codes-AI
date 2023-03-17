@@ -1,0 +1,62 @@
+import random
+import pandas as pd
+from deap import base, creator, tools, algorithms
+
+# Define the population of players
+pop = [[5, 8, 3, 6], 
+       [6, 7, 2, 9],
+       [8, 5, 4, 7],
+       [4, 9, 6, 5]]
+
+# Create a dataframe of the population
+df = pd.DataFrame(pop, columns=['Player 1', 'Player 2', 'Player 3', 'Player 4'])
+
+# Define the fitness function
+def fitness(stats):
+    return sum(stats)
+
+# Apply the fitness function to each player's stats
+df['Fitness'] = df.apply(lambda x: fitness(x), axis=1)
+
+# Define the genetic operators
+creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+creator.create("Individual", list, fitness=creator.FitnessMax)
+
+toolbox = base.Toolbox()
+
+toolbox.register("attr_int", random.randint, 1, 10)
+toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_int, n=4)
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+
+def evaluate(individual):
+    return sum(individual),
+
+toolbox.register("evaluate", evaluate)
+toolbox.register("mate", tools.cxTwoPoint)
+toolbox.register("mutate", tools.mutUniformInt, low=1, up=10, indpb=0.2)
+toolbox.register("select", tools.selTournament, tournsize=3)
+
+# Create an initial population of 10 individuals
+population = toolbox.population(n=10)
+
+# Run the genetic algorithm for 5 generations
+for gen in range(5):
+    offspring = algorithms.varAnd(population, toolbox, cxpb=0.5, mutpb=0.1)
+    fits = toolbox.map(toolbox.evaluate, offspring)
+    for fit, ind in zip(fits, offspring):
+        ind.fitness.values = fit
+    population = toolbox.select(offspring, k=len(population))
+
+# Choose the two individuals with the highest fitness
+best_individuals = tools.selBest(population, k=2)
+
+# Get the stats of the best two players
+best_players = []
+for ind in best_individuals:
+    best_players.append(list(ind))
+
+# Print the results
+print("Original population:")
+print(df)
+print("\nBest two players after 5 generations:")
+print(pd.DataFrame(best_players, columns=['Stat 1', 'Stat 2', 'Stat 3', 'Stat 4']))
